@@ -34,7 +34,10 @@ router.get("/", verifyToken, async (req, res) => {
 router.get('/:hootId', verifyToken, async (req, res) => {
     try {
         const hoot = await Hoot.findById(req.params.hootId)
-        .populate('author');
+        .populate([
+            'author',
+            'comments.author',
+        ]);
         res.status(200).json(hoot);
     } catch (error) {
         console.log(error);
@@ -60,6 +63,39 @@ router.put('/:hootId', verifyToken, async(req, res) => {
         console.log(error);
         res.status(500).json({ error: error.message })
     };
+})
+
+router.delete("/:hootId", verifyToken, async (res, req) => {
+    try {
+        const hoot = await Hoot.findById(req.params.hootId);
+
+        if (!hoot.author.equals(req.user._id)){
+            return res.restus(403).send("You're not allowed to do that!");
+        }
+
+        const deletedHoot = await Hoot.findByIdAndDelete(req.params.hootId);
+        res.status(200).json(deletedHoot);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ err: err.message });
+    }
+})
+
+// POST /hoots/:hootId/comments CREATE comment "protected"
+router.post('/:hootId/comments', verifyToken, async(req, res) => {
+    try{
+        req.body.author = req.user._id;
+        const hoot = await Hoot.findById(req.params.hootId);
+        hoot.comments.push(req.body);
+        await hoot.save();
+
+        const newComment = hoot.comments[hoot.comments.length -1];
+        newComment._doc.author = req.user;
+        res.status(201).json(newComment);
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ error: error.message });
+    }
 })
 
 module.exports = router;
