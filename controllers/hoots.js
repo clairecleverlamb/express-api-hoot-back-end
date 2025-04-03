@@ -1,5 +1,5 @@
 
-const express = require("express");
+const express = require('express');
 const verifyToken = require("../middleware/verify-token.js");
 const Hoot = require("../models/hoot.js");
 const router = express.Router();
@@ -9,7 +9,7 @@ router.post('/', verifyToken, async (req, res) => {
     try {
         req.body.author = req.user._id;
         const hoot = await Hoot.create(req.body);
-        hoot._dot.author = req.user // see all authors
+        hoot._doc.author = req.user // see all authors
         res.status(201).json(hoot);
     } catch (error) {
         console.log(error) //TODO: remove before production 
@@ -21,7 +21,7 @@ router.post('/', verifyToken, async (req, res) => {
 router.get("/", verifyToken, async (req, res) => {
     try {
       const hoots = await Hoot.find({})
-        .populate("author")
+        .populate('author')
         .sort({ createdAt: "desc" });
       res.status(200).json(hoots);
     } catch (err) {
@@ -50,7 +50,7 @@ router.put('/:hootId', verifyToken, async(req, res) => {
     try {
         const hoot = await Hoot.findById(req.params.hootId);
         if(!hoot.author.equals(req.user._id)){
-            res.status(403).send('You\'re not allowed to do that!');
+           return res.status(403).send('You\'re not allowed to do that!');
         }
         const updateHoot = await Hoot.findByIdAndUpdate(
             req.params.hootId,
@@ -61,16 +61,16 @@ router.put('/:hootId', verifyToken, async(req, res) => {
         res.status(200).json(updateHoot);
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: error.message })
-    };
-})
+        res.status(500).json({ error: error.message });
+    }
+});
 
-router.delete("/:hootId", verifyToken, async (res, req) => {
+router.delete("/:hootId", verifyToken, async (req, res) => {
     try {
         const hoot = await Hoot.findById(req.params.hootId);
 
         if (!hoot.author.equals(req.user._id)){
-            return res.restus(403).send("You're not allowed to do that!");
+            return res.status(403).send("You're not allowed to do that!");
         }
 
         const deletedHoot = await Hoot.findByIdAndDelete(req.params.hootId);
@@ -79,7 +79,7 @@ router.delete("/:hootId", verifyToken, async (res, req) => {
         console.log(error);
         res.status(500).json({ err: err.message });
     }
-})
+});
 
 // POST /hoots/:hootId/comments CREATE comment "protected"
 router.post('/:hootId/comments', verifyToken, async(req, res) => {
@@ -90,7 +90,7 @@ router.post('/:hootId/comments', verifyToken, async(req, res) => {
         await hoot.save();
 
         const newComment = hoot.comments[hoot.comments.length -1];
-        newComment._doc.author = req.user;
+        newComment._doc.author = req.user; // add requesting user's details 
         res.status(201).json(newComment);
     } catch (error) {
         console.log(error)
